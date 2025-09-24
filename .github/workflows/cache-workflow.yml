@@ -1,17 +1,47 @@
-name: Cache test workflow
+name: Prime GitHub Actions Cache (fixed key)
 
-on: [push]
+on:
+  workflow_dispatch:   # manual run
+  push:
+    branches:
+      - main           # optional: also run on pushes to main
 
 jobs:
-  cache-job:
+  prime-cache:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Cache dependencies
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare priming contents
+        run: |
+          # create a directory whose contents we'll cache
+          mkdir -p .cache-primer
+          echo "Primed by GitHub Actions on $(date -u)" > .cache-primer/primed.txt
+          echo "Use this to prime key cache-3d5ac7d" >> .cache-primer/primed.txt
+
+      - name: Cache step (restore / save)
         id: cache-step
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
+          path: .cache-primer
           key: cache-3d5ac7d
+          # restore-keys optional; here we pin to exact key
+          restore-keys: |
+            cache-3d5ac7d
+
       - name: prime-cache-3d5ac7d
-        run: echo "Cache hit status: ${{ steps.cache-step.outputs.cache-hit }}"
+        run: |
+          echo "Checking cache-hit output from actions/cache (step id: cache-step)"
+          if [ "${{ steps.cache-step.outputs.cache-hit }}" = "true" ]; then
+            echo "✅ cache-hit=true — cache restored for key: cache-3d5ac7d"
+          else
+            echo "❌ cache-hit=false — cache MISS for key: cache-3d5ac7d"
+            echo "This run will save the cache (if job succeeds) so subsequent runs can be hits."
+          fi
+
+      - name: Show cached files (for debug)
+        run: |
+          echo "Listing .cache-primer contents:"
+          ls -la .cache-primer || true
