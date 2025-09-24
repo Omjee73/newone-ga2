@@ -7,13 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Cache dependencies
         id: cache-step
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: cache-3d5ac7d
-
       - name: prime-cache-3d5ac7d
         run: echo "Cache hit status: ${{ steps.cache-step.outputs.cache-hit }}"
